@@ -1,75 +1,78 @@
-import React from 'react';
+import React, { Component } from 'react';
 import { MdAddShoppingCart } from 'react-icons/md';
+import { connect } from 'react-redux';
+import { bindActionCreators } from 'redux';
+
+import { formatPrice } from '../../util/format';
+import api from '../../services/api';
 
 import { ProductList } from './styles';
 
-export default function Home() {
-    return (
-        <ProductList>
-            <li>
-                <img
-                    src="https://static.netshoes.com.br/produtos/tenis-adidas-duramo-lite-2-0-masculino/36/COL-3586-036/COL-3586-036_detalhe1.jpg?resize=280:280"
-                    alt="Ténis"
-                />
-                <strong>Tênis legal</strong>
-                <strong>R$ 129,00</strong>
+import * as CartActions from '../../store/models/cart/actions';
 
-                <button type="button">
-                    <div>
-                        <MdAddShoppingCart size={16} color="#FFF" />
-                    </div>
+class Home extends Component {
+    state = {
+        products: [],
+    };
 
-                    <span>ADICIONAR AO CARRINHO</span>
-                </button>
-            </li>
-            <li>
-                <img
-                    src="https://static.netshoes.com.br/produtos/tenis-adidas-duramo-lite-2-0-masculino/36/COL-3586-036/COL-3586-036_detalhe1.jpg?resize=280:280"
-                    alt="Ténis"
-                />
-                <strong>Tênis legal</strong>
-                <strong>R$ 129,00</strong>
+    async componentDidMount() {
+        const response = await api.get('products');
 
-                <button type="button">
-                    <div>
-                        <MdAddShoppingCart size={16} color="#FFF" />
-                    </div>
+        const data = response.data.map(product => ({
+            ...product,
+            priceFormatted: formatPrice(product.price),
+        }));
 
-                    <span>ADICIONAR AO CARRINHO</span>
-                </button>
-            </li>
-            <li>
-                <img
-                    src="https://static.netshoes.com.br/produtos/tenis-adidas-duramo-lite-2-0-masculino/36/COL-3586-036/COL-3586-036_detalhe1.jpg?resize=280:280"
-                    alt="Ténis"
-                />
-                <strong>Tênis legal</strong>
-                <strong>R$ 129,00</strong>
+        this.setState({ products: data });
+    }
 
-                <button type="button">
-                    <div>
-                        <MdAddShoppingCart size={16} color="#FFF" />
-                    </div>
+    handleAddProduct = id => {
+        const { addToCartRequest } = this.props;
+        addToCartRequest(id);
+    };
 
-                    <span>ADICIONAR AO CARRINHO</span>
-                </button>
-            </li>
-            <li>
-                <img
-                    src="https://static.netshoes.com.br/produtos/tenis-adidas-duramo-lite-2-0-masculino/36/COL-3586-036/COL-3586-036_detalhe1.jpg?resize=280:280"
-                    alt="Ténis"
-                />
-                <strong>Tênis legal</strong>
-                <strong>R$ 129,00</strong>
+    render() {
+        const { products } = this.state;
+        const { amount } = this.props;
 
-                <button type="button">
-                    <div>
-                        <MdAddShoppingCart size={16} color="#FFF" />
-                    </div>
+        return (
+            <ProductList>
+                {products.map(product => (
+                    <li key={product.id}>
+                        <img src={product.image} alt={product.title} />
+                        <strong>{product.title}</strong>
+                        <strong>{product.priceFormatted}</strong>
 
-                    <span>ADICIONAR AO CARRINHO</span>
-                </button>
-            </li>
-        </ProductList>
-    );
+                        <button
+                            type="button"
+                            onClick={() => this.handleAddProduct(product.id)}
+                        >
+                            <div>
+                                <MdAddShoppingCart size={16} color="#FFF" />
+
+                                {amount[product.id] || 0}
+                            </div>
+
+                            <span>ADICIONAR AO CARRINHO</span>
+                        </button>
+                    </li>
+                ))}
+            </ProductList>
+        );
+    }
 }
+
+const mapStateToProps = state => ({
+    amount: state.cart.reduce((amount, product) => {
+        amount[product.id] = product.amount;
+        return amount;
+    }, {}),
+});
+
+const mapDispatchToProps = dispatch =>
+    bindActionCreators(CartActions, dispatch);
+
+export default connect(
+    mapStateToProps,
+    mapDispatchToProps
+)(Home);
